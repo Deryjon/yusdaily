@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Bot Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tg-bot-service
+EnvironmentFile=/opt/tg-bot-service/.env
+ExecStart=/opt/tg-bot-service/venv/bin/python -m app.main
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
