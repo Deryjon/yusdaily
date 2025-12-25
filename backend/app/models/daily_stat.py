@@ -5,7 +5,7 @@ from datetime import date
 from sqlalchemy import Date, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class DailyStat(Base):
@@ -20,4 +20,4 @@ class DailyStat(Base):
     user: Mapped["User"] = relationship(back_populates="daily_stats")
 
 
-from backend.app.models.user import User  # noqa: E402
+from app.models.user import User  # noqa: E402

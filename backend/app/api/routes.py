@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.db.session import get_session
-from backend.app.models import DailyStat, Idea, Task, TaskStatus, User
-from backend.app.schemas import IdeaCreate, UserCreate, UserRead
+from app.db.session import get_session
+from app.models import DailyStat, Idea, Task, TaskStatus, User
+from app.schemas import IdeaCreate, UserCreate, UserRead
 
 
 router = APIRouter()
@@ -177,3 +177,7 @@ async def auth_user() -> dict[str, bool]:
 @router.get("/api/tg/reminders/{reminder_type}")
 async def get_reminders() -> dict[str, list]:
     return {"items": []}
+
+
+from app.api.admin import router as admin_router
+router.include_router(admin_router)

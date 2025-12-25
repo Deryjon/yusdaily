@@ -6,7 +6,7 @@ from enum import StrEnum
 from sqlalchemy import BigInteger, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class Gender(StrEnum):
@@ -36,6 +36,6 @@ class User(Base):
     daily_stats: Mapped[list["DailyStat"]] = relationship(back_populates="user")
 
 
-from backend.app.models.task import Task  # noqa: E402
-from backend.app.models.idea import Idea  # noqa: E402
-from backend.app.models.daily_stat import DailyStat  # noqa: E402
+from app.models.task import Task  # noqa: E402
+from app.models.idea import Idea  # noqa: E402
+from app.models.daily_stat import DailyStat  # noqa: E402
