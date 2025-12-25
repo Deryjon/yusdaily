@@ -37,46 +37,51 @@ class CRMClient:
         r.raise_for_status()
         return r.json()
 
-    async def get_today_plan(self, telegram_id: int) -> dict[str, Any]:
+    async def get_profile(self, telegram_id: int) -> dict[str, Any] | None:
         r = await self._client.get(
-            f"{self._base_url}/api/tg/plan/today",
-            params={"telegram_id": telegram_id},
+            f"{self._base_url}/api/tg/profile",
+            params={"tg_id": telegram_id},
             headers=self._headers(),
         )
+        if r.status_code == 404:
+            return None
         r.raise_for_status()
         return r.json()
 
-    async def get_week_plan(self, telegram_id: int) -> dict[str, Any]:
-        r = await self._client.get(
-            f"{self._base_url}/api/tg/plan/week",
-            params={"telegram_id": telegram_id},
-            headers=self._headers(),
-        )
-        r.raise_for_status()
-        return r.json()
-
-    async def mark_done(self, telegram_id: int) -> dict[str, Any]:
+    async def create_profile(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if "telegram_id" in payload:
+            payload = {**payload, "tg_id": payload["telegram_id"]}
+            payload.pop("telegram_id", None)
         r = await self._client.post(
-            f"{self._base_url}/api/tg/done",
-            json={"telegram_id": telegram_id},
+            f"{self._base_url}/api/tg/profile",
+            json=payload,
             headers=self._headers(),
         )
         r.raise_for_status()
         return r.json()
 
-    async def get_settings(self, telegram_id: int) -> dict[str, Any]:
+    async def get_today(self, telegram_id: int) -> dict[str, Any]:
         r = await self._client.get(
-            f"{self._base_url}/api/tg/settings",
-            params={"telegram_id": telegram_id},
+            f"{self._base_url}/today",
+            params={"tg_id": telegram_id},
             headers=self._headers(),
         )
         r.raise_for_status()
         return r.json()
 
-    async def update_settings(self, telegram_id: int, settings: dict[str, Any]) -> dict[str, Any]:
+    async def get_progress(self, telegram_id: int, period: str) -> dict[str, Any]:
+        r = await self._client.get(
+            f"{self._base_url}/progress",
+            params={"tg_id": telegram_id, "period": period},
+            headers=self._headers(),
+        )
+        r.raise_for_status()
+        return r.json()
+
+    async def create_idea(self, telegram_id: int, text: str, source: str) -> dict[str, Any]:
         r = await self._client.post(
-            f"{self._base_url}/api/tg/settings",
-            json={"telegram_id": telegram_id, **settings},
+            f"{self._base_url}/ideas",
+            json={"tg_id": telegram_id, "text": text, "source": source},
             headers=self._headers(),
         )
         r.raise_for_status()

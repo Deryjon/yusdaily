@@ -3,37 +3,44 @@ from typing import Final
 
 LOCALES: Final = {
     "ru": {
-        "start_greeting": (
-            "Привет! Я бот твоих шагов.\n\n"
-            "Команды:\n"
-            "/today — план на сегодня\n"
-            "/week — план недели\n"
-            "/done — отметить шаг\n"
-            "/settings — настройки напоминаний"
-        ),
-        "menu_title": "Главное меню",
-        "menu_today": "План на сегодня",
+        "start_greeting": "Привет! Используй кнопки ниже.",
+        "menu_title": "Выберите действие",
+        "menu_today": "📅 План на сегодня",
+        "menu_progress": "📊 Мой прогресс",
+        "menu_ideas": "💡 Задумки",
         "menu_week": "План недели",
-        "menu_done": "Сделал шаг",
+        "menu_done": "Готово",
         "menu_settings": "Настройки",
         "today_empty": "Нет плана на сегодня",
         "week_empty": "Нет плана на неделю",
-        "done_ok": "Отлично! Шаг отмечен.",
+        "done_ok": "Готово!",
         "settings_empty": "Настройки недоступны",
         "daily_reminder": "Сделай один шаг",
         "evening_reminder": "Подведи итог дня",
+        "ask_phone": "Отправьте номер телефона",
+        "share_phone": "Поделиться номером",
+        "ask_first_name": "Введите имя",
+        "ask_last_name": "Введите фамилию",
+        "ask_birth_year": "Введите год рождения",
+        "invalid_birth_year": "Введите год рождения числом",
+        "ask_gender": "Выберите пол",
+        "gender_male": "👦 Мальчик",
+        "gender_female": "👧 Девочка",
+        "profile_saved": "✅ Профиль сохранён",
+        "profile_already_saved": "✅ Профиль уже сохранён",
+        "invalid_phone": "Нужен номер телефона через кнопку",
+        "progress_choose": "Выберите период",
+        "period_week": "📆 Неделя",
+        "period_month": "🗓 Месяц",
+        "idea_prompt": "💡 Напиши задумку одним сообщением",
+        "idea_saved": "✅ Задумка сохранена",
     },
     "en": {
-        "start_greeting": (
-            "Hi! I'm your step bot.\n\n"
-            "Commands:\n"
-            "/today — today's plan\n"
-            "/week — weekly plan\n"
-            "/done — mark step done\n"
-            "/settings — reminder settings"
-        ),
+        "start_greeting": "Hi! Use the buttons below.",
         "menu_title": "Main menu",
-        "menu_today": "Today's plan",
+        "menu_today": "📅 Plan for today",
+        "menu_progress": "📊 My progress",
+        "menu_ideas": "💡 Ideas",
         "menu_week": "Weekly plan",
         "menu_done": "Step done",
         "menu_settings": "Settings",
@@ -43,6 +50,23 @@ LOCALES: Final = {
         "settings_empty": "Settings are unavailable",
         "daily_reminder": "Make one step",
         "evening_reminder": "Summarize your day",
+        "ask_phone": "Send your phone number",
+        "share_phone": "Share phone number",
+        "ask_first_name": "Enter first name",
+        "ask_last_name": "Enter last name",
+        "ask_birth_year": "Enter birth year",
+        "invalid_birth_year": "Please enter birth year as a number",
+        "ask_gender": "Select gender",
+        "gender_male": "Boy",
+        "gender_female": "Girl",
+        "profile_saved": "Profile saved",
+        "profile_already_saved": "Profile already saved",
+        "invalid_phone": "Send phone number using the button",
+        "progress_choose": "Choose a period",
+        "period_week": "📆 Week",
+        "period_month": "🗓 Month",
+        "idea_prompt": "💡 Send your idea in one message",
+        "idea_saved": "✅ Idea saved",
     },
 }
 
