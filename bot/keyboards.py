@@ -13,6 +13,9 @@ def main_menu_kb(language_code: str | None) -> types.ReplyKeyboardMarkup:
                 types.KeyboardButton(text=t("menu_progress", language_code)),
             ],
             [
+                types.KeyboardButton(text=t("menu_profile", language_code)),
+            ],
+            [
                 types.KeyboardButton(text=t("menu_ideas", language_code)),
             ],
         ],
@@ -55,5 +58,13 @@ def progress_period_kb(language_code: str | None) -> types.InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t("period_week", language_code), callback_data="progress:week")
     builder.button(text=t("period_month", language_code), callback_data="progress:month")
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def profile_actions_kb(language_code: str | None) -> types.InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t("profile_edit", language_code), callback_data="profile:edit")
+    builder.button(text=t("profile_back", language_code), callback_data="profile:back")
     builder.adjust(2)
     return builder.as_markup()
