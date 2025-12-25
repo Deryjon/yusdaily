@@ -6,7 +6,7 @@ from enum import StrEnum
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class IdeaSource(StrEnum):
@@ -30,4 +30,4 @@ class Idea(Base):
     user: Mapped["User"] = relationship(back_populates="ideas")
 
 
-from backend.app.models.user import User  # noqa: E402
+from app.models.user import User  # noqa: E402

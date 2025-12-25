@@ -1,10 +1,18 @@
 from logging.config import fileConfig
 import os
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 from alembic import context
 
 from backend.app.db.base import Base
+
+
+db_url = os.getenv("DATABASE_URL_SYNC") or os.getenv("DATABASE_URL")
+
+# если вдруг в DATABASE_URL остался asyncpg, принудительно заменим
+db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+
+connectable = create_engine(db_url, pool_pre_ping=True)
 
 config = context.config
 
@@ -33,18 +41,17 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def _get_sync_url() -> str:
+    db_url = os.getenv("DATABASE_URL_SYNC") or os.getenv("DATABASE_URL") or ""
+    if not db_url:
+        raise RuntimeError("DATABASE_URL or DATABASE_URL_SYNC is required for migrations")
+    return db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+
 def run_migrations_online() -> None:
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = _get_url()
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_engine(_get_sync_url(), poolclass=pool.NullPool, pool_pre_ping=True)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
-
         with context.begin_transaction():
             context.run_migrations()
 

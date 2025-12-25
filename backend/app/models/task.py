@@ -6,7 +6,7 @@ from enum import StrEnum
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class TaskStatus(StrEnum):
@@ -33,4 +33,4 @@ class Task(Base):
     user: Mapped["User"] = relationship(back_populates="tasks")
 
 
-from backend.app.models.user import User  # noqa: E402
+from app.models.user import User  # noqa: E402
