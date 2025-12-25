@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from app.locales import t
+from bot.locales import t
 
 
 def main_menu_kb(language_code: str | None) -> types.ReplyKeyboardMarkup:

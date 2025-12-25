@@ -2,10 +2,10 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
-from app.api.crm_client import CRMClient
-from app.config import get_settings
-from app.handlers import start, plan, menu
-from app.services.reminders import ReminderService
+from bot.api.crm_client import CRMClient
+from bot.config import get_settings
+from bot.handlers import start, plan, menu
+from bot.services.reminders import ReminderService
 
 
 async def setup_commands(bot: Bot) -> None:

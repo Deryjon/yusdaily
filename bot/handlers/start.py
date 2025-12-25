@@ -3,9 +3,9 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
-from app.api.crm_client import CRMClient
-from app.keyboards import gender_kb, main_menu_kb, phone_request_kb
-from app.locales import t
+from bot.api.crm_client import CRMClient
+from bot.keyboards import gender_kb, main_menu_kb, phone_request_kb
+from bot.locales import t
 
 router = Router()
 

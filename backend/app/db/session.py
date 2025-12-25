@@ -1,7 +1,8 @@
 from collections.abc import AsyncIterator
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.backend.config import get_backend_settings
+from backend.app.core.config import get_backend_settings
 
 
 def _build_engine():

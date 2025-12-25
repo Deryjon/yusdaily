@@ -9,26 +9,28 @@ Telegram bot (aiogram 3) + FastAPI backend + PostgreSQL.
 
 ## Установка
 
+Бот:
+
 ```bash
 python -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r bot-requirements.txt
+```
+
+Backend:
+
+```bash
+pip install -r backend/requirements.txt
 ```
 
 ## Конфигурация
 
-Скопируйте и заполните `.env`:
-
-```
-BOT_TOKEN=...
-CRM_BASE_URL=http://127.0.0.1:8000
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/tg_bot
-```
+Скопируйте `.env.example` в `.env` и заполните значения.
 
 ## Миграции
 
 ```bash
-python -m alembic -c alembic.ini upgrade head
+python -m alembic -c backend/alembic.ini upgrade head
 ```
 
 ## Запуск
@@ -36,13 +38,19 @@ python -m alembic -c alembic.ini upgrade head
 Backend:
 
 ```bash
-uvicorn app.backend.main:app --host 0.0.0.0 --port 8000
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Bot:
 
 ```bash
-python -m app.main
+python -m bot.main
+```
+
+## Docker
+
+```bash
+docker-compose up --build
 ```
 
 ## API
@@ -87,8 +95,6 @@ POST /ideas
 ```
 
 ## WebApp (заготовка)
-
-Планируемый URL:
 
 ```
 https://app.domain.com?tg_id=123456

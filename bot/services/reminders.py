@@ -1,8 +1,8 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from aiogram import Bot
-from app.api.crm_client import CRMClient
-from app.locales import t
+from bot.api.crm_client import CRMClient
+from bot.locales import t
 
 
 class ReminderService:

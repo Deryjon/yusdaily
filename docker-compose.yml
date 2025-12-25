@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: tg_bot
+      POSTGRES_PASSWORD: tg_bot
+      POSTGRES_DB: tg_bot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://tg_bot:tg_bot@db:5432/tg_bot
+    depends_on:
+      - db
+    command: >
+      sh -c "pip install -r backend/requirements.txt
+      && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+volumes:
+  pg_data:

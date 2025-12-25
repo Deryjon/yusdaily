@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.backend.db import get_session
-from app.backend.models import DailyStat, Idea, Task, TaskStatus, User
-from app.backend.schemas import IdeaCreate, UserCreate, UserRead
+from backend.app.db.session import get_session
+from backend.app.models import DailyStat, Idea, Task, TaskStatus, User
+from backend.app.schemas import IdeaCreate, UserCreate, UserRead
 
 
 router = APIRouter()
@@ -14,9 +14,7 @@ router = APIRouter()
 
 @router.get("/api/tg/profile", response_model=UserRead)
 async def get_profile(tg_id: int, session: AsyncSession = Depends(get_session)) -> User:
-    result = await session.execute(
-        select(User).where(User.tg_id == tg_id)
-    )
+    result = await session.execute(select(User).where(User.tg_id == tg_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -28,9 +26,7 @@ async def create_or_update_profile(
     payload: UserCreate,
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    result = await session.execute(
-        select(User).where(User.tg_id == payload.tg_id)
-    )
+    result = await session.execute(select(User).where(User.tg_id == payload.tg_id))
     profile = result.scalar_one_or_none()
     if profile:
         profile.username = payload.username

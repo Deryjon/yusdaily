@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from app.api.crm_client import CRMClient
-from app.locales import t
+from bot.api.crm_client import CRMClient
+from bot.locales import t
 
 router = Router()
 
