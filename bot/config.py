@@ -12,6 +12,7 @@ class Settings:
     crm_token: str | None
     daily_cron: str
     evening_cron: str
+    webapp_url: str
 
 
 def get_settings() -> Settings:
@@ -26,4 +27,5 @@ def get_settings() -> Settings:
         crm_token=os.getenv("CRM_TOKEN"),
         daily_cron=os.getenv("DAILY_CRON", "0 9 * * *"),
         evening_cron=os.getenv("EVENING_CRON", "0 20 * * *"),
+        webapp_url=os.getenv("WEBAPP_URL", "https://yus-daily-crm.vercel.app/"),
     )

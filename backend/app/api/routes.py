@@ -1,15 +1,22 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import os
 
 from app.db.session import get_session
 from app.models import DailyStat, Idea, Task, TaskStatus, User
 from app.schemas import IdeaCreate, UserCreate, UserRead
+from app.services.webapp_auth import verify_init_data
 
 
 router = APIRouter()
+
+
+class WebAppAuthRequest(BaseModel):
+    initData: str
 
 
 @router.get("/api/tg/profile", response_model=UserRead)
@@ -172,6 +179,20 @@ async def create_idea(
 @router.post("/api/tg/auth")
 async def auth_user() -> dict[str, bool]:
     return {"ok": True}
+
+
+@router.post("/tg/webapp/auth")
+async def webapp_auth(payload: WebAppAuthRequest) -> dict[str, object]:
+    bot_token = os.getenv("BOT_TOKEN", "")
+    if not bot_token:
+        return {"ok": False, "error": "BOT_TOKEN is not configured"}
+
+    ok, result = verify_init_data(payload.initData, bot_token)
+    if not ok:
+        return {"ok": False, "error": result}
+
+    user = result.get("user") if isinstance(result, dict) else None
+    return {"ok": True, "user": user}
 
 
 @router.get("/api/tg/reminders/{reminder_type}")

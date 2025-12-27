@@ -12,6 +12,7 @@ async def setup_commands(bot: Bot) -> None:
     commands = [
         BotCommand(command="start", description="Start"),
         BotCommand(command="today", description="Plan for today"),
+        BotCommand(command="app", description="Open CRM"),
     ]
     await bot.set_my_commands(commands, language_code="en")
 
@@ -39,7 +40,7 @@ async def main() -> None:
     reminder_service.start()
 
     try:
-        await dp.start_polling(bot, crm=crm)
+        await dp.start_polling(bot, crm=crm, webapp_url=cfg.webapp_url)
     finally:
         await crm.close()
 

@@ -4,10 +4,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from bot.api.crm_client import CRMClient
-from bot.keyboards import gender_kb, main_menu_kb, phone_request_kb
+from bot.keyboards import gender_kb, main_menu_kb, phone_request_kb, webapp_fallback_kb, webapp_kb
 from bot.locales import t
+from datetime import datetime
+import logging
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 class RegistrationState(StatesGroup):
@@ -18,8 +21,38 @@ class RegistrationState(StatesGroup):
     gender = State()
 
 
+async def send_webapp_prompt(message: types.Message, webapp_url: str) -> None:
+    user = message.from_user
+    logger.info(
+        "webapp_prompt user_id=%s username=%s ts=%s",
+        user.id if user else None,
+        user.username if user else None,
+        datetime.utcnow().isoformat(),
+    )
+    await message.answer(
+        "\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
+        reply_markup=webapp_kb(webapp_url),
+    )
+    await message.answer(
+        "\u0415\u0441\u043b\u0438 WebApp \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f, "
+        "\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443:",
+        reply_markup=webapp_fallback_kb(webapp_url),
+    )
+
+
+@router.message(Command("app"))
+async def app_cmd(message: types.Message, webapp_url: str) -> None:
+    await send_webapp_prompt(message, webapp_url)
+
+
 @router.message(Command("start"))
-async def start_cmd(message: types.Message, crm: CRMClient, state: FSMContext) -> None:
+async def start_cmd(
+    message: types.Message,
+    crm: CRMClient,
+    state: FSMContext,
+    webapp_url: str,
+) -> None:
+    await send_webapp_prompt(message, webapp_url)
     user = message.from_user
     lang = user.language_code
     profile = await crm.get_profile(user.id)

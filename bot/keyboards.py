@@ -68,3 +68,23 @@ def profile_actions_kb(language_code: str | None) -> types.InlineKeyboardMarkup:
     builder.button(text=t("profile_back", language_code), callback_data="profile:back")
     builder.adjust(2)
     return builder.as_markup()
+
+
+def webapp_kb(webapp_url: str) -> types.InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
+        web_app=types.WebAppInfo(url=webapp_url),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def webapp_fallback_kb(webapp_url: str) -> types.InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM (\u0441\u0441\u044b\u043b\u043a\u0430)",
+        url=webapp_url,
+    )
+    builder.adjust(1)
+    return builder.as_markup()
