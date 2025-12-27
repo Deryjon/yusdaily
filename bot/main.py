@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 from bot.api.crm_client import CRMClient
 from bot.config import get_settings
 from bot.handlers import start, plan, menu
@@ -12,7 +12,6 @@ async def setup_commands(bot: Bot) -> None:
     commands = [
         BotCommand(command="start", description="Start"),
         BotCommand(command="today", description="Plan for today"),
-        BotCommand(command="app", description="Open CRM"),
     ]
     await bot.set_my_commands(commands, language_code="en")
 
@@ -35,12 +34,18 @@ async def main() -> None:
     dp.include_router(menu.router)
 
     await setup_commands(bot)
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="Open",
+            web_app=WebAppInfo(url=cfg.webapp_url),
+        )
+    )
 
     reminder_service = ReminderService(bot, crm, cfg.daily_cron, cfg.evening_cron)
     reminder_service.start()
 
     try:
-        await dp.start_polling(bot, crm=crm, webapp_url=cfg.webapp_url)
+        await dp.start_polling(bot, crm=crm)
     finally:
         await crm.close()
 

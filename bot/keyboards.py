@@ -69,17 +69,3 @@ def profile_actions_kb(language_code: str | None) -> types.InlineKeyboardMarkup:
     builder.adjust(2)
     return builder.as_markup()
 
-
-def webapp_reply_kb(webapp_url: str) -> types.ReplyKeyboardMarkup:
-    return types.ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                types.KeyboardButton(
-                    text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
-                    web_app=types.WebAppInfo(url=webapp_url),
-                )
-            ]
-        ],
-        resize_keyboard=True,
-        input_field_placeholder="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
-    )
