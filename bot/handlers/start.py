@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from bot.api.crm_client import CRMClient
-from bot.keyboards import gender_kb, main_menu_kb, phone_request_kb, webapp_fallback_kb, webapp_kb
+from bot.keyboards import gender_kb, main_menu_kb, phone_request_kb, webapp_reply_kb
 from bot.locales import t
 from datetime import datetime
 import logging
@@ -31,12 +31,7 @@ async def send_webapp_prompt(message: types.Message, webapp_url: str) -> None:
     )
     await message.answer(
         "\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
-        reply_markup=webapp_kb(webapp_url),
-    )
-    await message.answer(
-        "\u0415\u0441\u043b\u0438 WebApp \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f, "
-        "\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443:",
-        reply_markup=webapp_fallback_kb(webapp_url),
+        reply_markup=webapp_reply_kb(webapp_url),
     )
 
 

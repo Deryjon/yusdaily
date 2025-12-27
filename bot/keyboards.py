@@ -70,21 +70,16 @@ def profile_actions_kb(language_code: str | None) -> types.InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def webapp_kb(webapp_url: str) -> types.InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(
-        text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
-        web_app=types.WebAppInfo(url=webapp_url),
+def webapp_reply_kb(webapp_url: str) -> types.ReplyKeyboardMarkup:
+    return types.ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                types.KeyboardButton(
+                    text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
+                    web_app=types.WebAppInfo(url=webapp_url),
+                )
+            ]
+        ],
+        resize_keyboard=True,
+        input_field_placeholder="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM",
     )
-    builder.adjust(1)
-    return builder.as_markup()
-
-
-def webapp_fallback_kb(webapp_url: str) -> types.InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(
-        text="\u041e\u0442\u043a\u0440\u044b\u0442\u044c CRM (\u0441\u0441\u044b\u043b\u043a\u0430)",
-        url=webapp_url,
-    )
-    builder.adjust(1)
-    return builder.as_markup()
