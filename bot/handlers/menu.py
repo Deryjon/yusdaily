@@ -11,6 +11,67 @@ from bot.locales import t
 router = Router()
 
 
+
+
+def format_today_text(data: dict, language_code: str | None) -> str:
+    completed = int(data.get("completed", 0) or 0)
+    pending = int(data.get("pending", 0) or 0)
+    lines = [
+        t("menu_today", language_code),
+        f"Done: {completed}",
+        f"Pending: {pending}",
+    ]
+
+    no_deadline = data.get("no_deadline") or []
+    with_deadline = data.get("with_deadline") or []
+
+    if no_deadline:
+        lines.append("")
+        lines.append("No deadline:")
+        for item in no_deadline:
+            if isinstance(item, dict):
+                title = item.get("title", "")
+            else:
+                title = str(item)
+            if title:
+                lines.append(f"- {title}")
+
+    if with_deadline:
+        lines.append("")
+        lines.append("With deadline:")
+        for item in with_deadline:
+            if isinstance(item, dict):
+                title = item.get("title", "")
+                deadline = item.get("deadline")
+            else:
+                title = str(item)
+                deadline = None
+            if not title:
+                continue
+            if deadline:
+                lines.append(f"- {title} ({deadline})")
+            else:
+                lines.append(f"- {title}")
+
+    return "\n".join(lines)
+
+
+def format_progress_text(data: dict, language_code: str | None) -> str:
+    completed = int(data.get("completed", 0) or 0)
+    pending = int(data.get("pending", 0) or 0)
+    percent = int(data.get("percent", 0) or 0)
+    streak = int(data.get("streak", 0) or 0)
+
+    lines = [
+        t("menu_progress", language_code),
+        f"Done: {completed}",
+        f"Pending: {pending}",
+        f"Percent: {percent}%",
+        f"Streak: {streak}",
+    ]
+    return "\n".join(lines)
+
+
 class IdeaState(StatesGroup):
     waiting_text = State()
 
@@ -56,7 +117,7 @@ async def menu_text_router(message: types.Message, crm: CRMClient, state: FSMCon
 
     if text == t("menu_today", lang):
         data = await crm.get_today(message.from_user.id)
-        await message.answer(data.get("text") or t("today_empty", lang))
+        await message.answer(format_today_text(data, lang) or t("today_empty", lang))
         return
 
     if text == t("menu_progress", lang):
@@ -121,7 +182,7 @@ async def progress_callback(query: types.CallbackQuery, crm: CRMClient) -> None:
     period = query.data.split(":", 1)[1]
     data = await crm.get_progress(query.from_user.id, period)
     if query.message:
-        await query.message.answer(data.get("text") or "")
+        await query.message.answer(format_progress_text(data, query.from_user.language_code))
     await query.answer()
 
 

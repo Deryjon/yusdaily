@@ -22,3 +22,14 @@ class UserRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProfileRead(BaseModel):
+    phone: str
+    first_name: str
+    last_name: str
+    birth_year: int
+    gender: str
+
+    class Config:
+        from_attributes = True

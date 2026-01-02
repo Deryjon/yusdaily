@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -6,9 +6,22 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 
+from app.api.deps import get_current_user
 from app.db.session import get_session
 from app.models import DailyStat, Idea, Task, TaskStatus, User
-from app.schemas import IdeaCreate, UserCreate, UserRead
+from app.schemas import (
+    IdeaCreatePayload,
+    IdeaRead,
+    ProfileRead,
+    ProgressResponse,
+    TaskCreate,
+    TaskRead,
+    TaskUpdate,
+    TodayResponse,
+    UserCreate,
+    UserRead,
+)
+from app.services.stats import ensure_stats_range, get_day_bounds, upsert_daily_stat
 from app.services.webapp_auth import verify_init_data
 
 
@@ -61,119 +74,254 @@ async def create_or_update_profile(
     return profile
 
 
-@router.get("/today")
-async def get_today(tg_id: int, session: AsyncSession = Depends(get_session)) -> dict[str, str]:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-
-    result = await session.execute(select(Task).where(Task.user_id == user.id))
-    tasks = result.scalars().all()
-
-    done_count = sum(1 for task in tasks if task.status == TaskStatus.done)
-    pending = [task for task in tasks if task.status != TaskStatus.done]
-    without_deadline = [task for task in pending if not task.has_deadline]
-    with_deadline = [task for task in pending if task.has_deadline]
-
-    lines = [
-        "📅 План на сегодня",
-        "",
-        f"✅ Выполнено: {done_count}",
-        f"⏳ Не выполнено: {len(pending)}",
-        "",
-        "🟢 Без дедлайна",
-    ]
-    if without_deadline:
-        lines.extend([f"• {task.title}" for task in without_deadline])
-    else:
-        lines.append("• Нет задач")
-
-    lines.extend(["", "🔴 С дедлайном"])
-    if with_deadline:
-        for task in with_deadline:
-            deadline_str = ""
-            if task.deadline:
-                deadline_str = f" (до {task.deadline:%H:%M})"
-            lines.append(f"• {task.title}{deadline_str}")
-    else:
-        lines.append("• Нет задач")
-
-    return {"text": "\n".join(lines)}
+@router.get("/api/profile", response_model=ProfileRead)
+async def get_profile_current(user: User = Depends(get_current_user)) -> User:
+    return user
 
 
-@router.get("/progress")
-async def get_progress(
-    tg_id: int,
-    period: str,
+@router.get("/api/today", response_model=TodayResponse)
+async def get_today(
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, str]:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+) -> dict[str, object]:
+    today = date.today()
+    await upsert_daily_stat(session, user.id, today)
+    await session.commit()
 
-    now = datetime.utcnow()
+    day_start, day_end = get_day_bounds(today)
+    result = await session.execute(
+        select(Task).where(
+            Task.user_id == user.id,
+            Task.has_deadline.is_(True),
+            Task.deadline >= day_start,
+            Task.deadline < day_end,
+        )
+    )
+    deadline_tasks = result.scalars().all()
+    completed = sum(1 for task in deadline_tasks if task.status == TaskStatus.done)
+    pending_tasks = [task for task in deadline_tasks if task.status != TaskStatus.done]
+
+    result = await session.execute(
+        select(Task).where(
+            Task.user_id == user.id,
+            Task.has_deadline.is_(False),
+            Task.status != TaskStatus.done,
+        )
+    )
+    no_deadline_tasks = result.scalars().all()
+
+    return {
+        "completed": completed,
+        "pending": len(pending_tasks),
+        "no_deadline": [
+            {"id": task.id, "title": task.title} for task in no_deadline_tasks
+        ],
+        "with_deadline": [
+            {
+                "id": task.id,
+                "title": task.title,
+                "deadline": task.deadline,
+            }
+            for task in pending_tasks
+        ],
+    }
+
+
+@router.get("/api/progress", response_model=ProgressResponse)
+async def get_progress(
+    period: str,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, int]:
     if period == "week":
-        start = now - timedelta(days=7)
-        title = "неделю"
+        days = 7
     elif period == "month":
-        start = now - timedelta(days=30)
-        title = "месяц"
+        days = 30
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid period")
 
-    result = await session.execute(
-        select(Task).where(Task.user_id == user.id, Task.created_at >= start)
-    )
-    tasks = result.scalars().all()
-    done_count = sum(1 for task in tasks if task.status == TaskStatus.done)
-    total_count = len(tasks)
-    pending_count = total_count - done_count
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days - 1)
+    await ensure_stats_range(session, user.id, start_date, end_date)
+    await session.commit()
 
     result = await session.execute(
-        select(DailyStat).where(DailyStat.user_id == user.id, DailyStat.date >= start.date())
+        select(DailyStat).where(
+            DailyStat.user_id == user.id,
+            DailyStat.date >= start_date,
+            DailyStat.date <= end_date,
+        )
     )
-    stats = {stat.date: stat for stat in result.scalars().all()}
+    stats = result.scalars().all()
+    total = sum(stat.total_tasks for stat in stats)
+    completed = sum(stat.completed_tasks for stat in stats)
+    pending = total - completed
+    percent = round((completed / total) * 100) if total else 0
+
+    stats_by_date = {stat.date: stat for stat in stats}
     streak = 0
-    cursor = now.date()
+    cursor = end_date
     while True:
-        stat = stats.get(cursor)
+        stat = stats_by_date.get(cursor)
         if not stat or stat.completed_tasks <= 0:
             break
         streak += 1
         cursor = cursor - timedelta(days=1)
 
-    progress_percent = 0
-    if total_count:
-        progress_percent = round((done_count / total_count) * 100)
-
-    lines = [
-        f"📊 Прогресс за {title}",
-        "",
-        f"✅ Выполнено: {done_count}",
-        f"⏳ Не выполнено: {pending_count}",
-        f"🔥 Серия дней: {streak}",
-        "",
-        f"📈 Прогресс: {progress_percent}%",
-    ]
-    return {"text": "\n".join(lines)}
+    return {
+        "completed": completed,
+        "pending": pending,
+        "percent": percent,
+        "streak": streak,
+    }
 
 
-@router.post("/ideas")
+@router.post("/api/ideas")
 async def create_idea(
-    payload: IdeaCreate,
+    payload: IdeaCreatePayload,
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
-    result = await session.execute(select(User).where(User.tg_id == payload.tg_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-
     idea = Idea(user_id=user.id, text=payload.text, source=payload.source)
     session.add(idea)
     await session.commit()
-    return {"text": "✅ Задумка сохранена"}
+    return {"status": "ok"}
+
+
+@router.get("/api/ideas", response_model=list[IdeaRead])
+async def list_ideas(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> list[Idea]:
+    result = await session.execute(
+        select(Idea).where(Idea.user_id == user.id).order_by(Idea.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.delete("/api/ideas/{idea_id}")
+async def delete_idea(
+    idea_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    result = await session.execute(
+        select(Idea).where(Idea.id == idea_id, Idea.user_id == user.id)
+    )
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    session.delete(idea)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.get("/api/tasks", response_model=list[TaskRead])
+async def list_tasks(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> list[Task]:
+    result = await session.execute(
+        select(Task).where(Task.user_id == user.id).order_by(Task.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/api/tasks", response_model=TaskRead)
+async def create_task(
+    payload: TaskCreate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Task:
+    has_deadline = payload.has_deadline
+    if payload.deadline is not None:
+        has_deadline = True
+
+    task = Task(
+        user_id=user.id,
+        title=payload.title,
+        status=TaskStatus.inbox,
+        has_deadline=has_deadline,
+        deadline=payload.deadline,
+    )
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return task
+
+
+@router.patch("/api/tasks/{task_id}", response_model=TaskRead)
+async def update_task(
+    task_id: int,
+    payload: TaskUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Task:
+    result = await session.execute(
+        select(Task).where(Task.id == task_id, Task.user_id == user.id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    fields_set = getattr(payload, "model_fields_set", getattr(payload, "__fields_set__", set()))
+
+    if "title" in fields_set and payload.title is not None:
+        task.title = payload.title
+    if "status" in fields_set and payload.status is not None:
+        task.status = payload.status
+    if "deadline" in fields_set:
+        task.deadline = payload.deadline
+        task.has_deadline = payload.deadline is not None
+
+    await session.commit()
+    await session.refresh(task)
+    return task
+
+
+@router.delete("/api/tasks/{task_id}")
+async def delete_task(
+    task_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    result = await session.execute(
+        select(Task).where(Task.id == task_id, Task.user_id == user.id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    session.delete(task)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.post("/api/tasks/from-idea/{idea_id}", response_model=TaskRead)
+async def task_from_idea(
+    idea_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Task:
+    result = await session.execute(
+        select(Idea).where(Idea.id == idea_id, Idea.user_id == user.id)
+    )
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    task = Task(
+        user_id=user.id,
+        title=idea.text,
+        status=TaskStatus.inbox,
+        has_deadline=False,
+    )
+    session.add(task)
+    session.delete(idea)
+    await session.commit()
+    await session.refresh(task)
+    return task
 
 
 @router.post("/api/tg/auth")

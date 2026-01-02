@@ -13,6 +13,11 @@ class CRMClient:
             return {"Authorization": f"Bearer {self._token}"}
         return {}
 
+    def _tg_headers(self, telegram_id: int) -> dict[str, str]:
+        headers = self._headers()
+        headers["X-TG-ID"] = str(telegram_id)
+        return headers
+
     async def close(self) -> None:
         await self._client.aclose()
 
@@ -62,27 +67,26 @@ class CRMClient:
 
     async def get_today(self, telegram_id: int) -> dict[str, Any]:
         r = await self._client.get(
-            f"{self._base_url}/today",
-            params={"tg_id": telegram_id},
-            headers=self._headers(),
+            f"{self._base_url}/api/today",
+            headers=self._tg_headers(telegram_id),
         )
         r.raise_for_status()
         return r.json()
 
     async def get_progress(self, telegram_id: int, period: str) -> dict[str, Any]:
         r = await self._client.get(
-            f"{self._base_url}/progress",
-            params={"tg_id": telegram_id, "period": period},
-            headers=self._headers(),
+            f"{self._base_url}/api/progress",
+            params={"period": period},
+            headers=self._tg_headers(telegram_id),
         )
         r.raise_for_status()
         return r.json()
 
     async def create_idea(self, telegram_id: int, text: str, source: str) -> dict[str, Any]:
         r = await self._client.post(
-            f"{self._base_url}/ideas",
-            json={"tg_id": telegram_id, "text": text, "source": source},
-            headers=self._headers(),
+            f"{self._base_url}/api/ideas",
+            json={"text": text, "source": source},
+            headers=self._tg_headers(telegram_id),
         )
         r.raise_for_status()
         return r.json()
