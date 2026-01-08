@@ -48,6 +48,10 @@ async def create_or_update_profile(
 ) -> User:
     result = await session.execute(select(User).where(User.tg_id == payload.tg_id))
     profile = result.scalar_one_or_none()
+    result = await session.execute(select(User).where(User.phone == payload.phone))
+    phone_owner = result.scalar_one_or_none()
+    if phone_owner and (not profile or phone_owner.id != profile.id):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Phone is already in use")
     if profile:
         profile.username = payload.username
         profile.phone = payload.phone

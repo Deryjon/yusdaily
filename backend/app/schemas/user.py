@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
 
 
 class UserRead(BaseModel):
+    id: int
     tg_id: int
     username: str | None
     phone: str
@@ -25,6 +26,7 @@ class UserRead(BaseModel):
 
 
 class ProfileRead(BaseModel):
+    id: int
     phone: str
     first_name: str
     last_name: str
