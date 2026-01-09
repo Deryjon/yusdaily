@@ -1,14 +1,30 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_backend_settings
 from app.db.session import get_session
 from app.models.user import User
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+
+def require_admin_token(
+    authorization: str = Header(..., alias="Authorization"),
+) -> None:
+    settings = get_backend_settings()
+    if not settings.api_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    expected = f"Bearer {settings.api_token}"
+    if authorization != expected:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+
 @router.get("/users")
-async def list_users(session: AsyncSession = Depends(get_session)):
+async def list_users(
+    _: None = Depends(require_admin_token),
+    session: AsyncSession = Depends(get_session),
+):
     result = await session.execute(select(User).order_by(User.id.desc()))
     users = result.scalars().all()
     return {"items": [
