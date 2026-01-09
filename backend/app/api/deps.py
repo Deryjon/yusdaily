@@ -27,6 +27,7 @@ async def get_current_user(
     tg_id = user_payload["id"]
 
     result = await session.execute(select(User).where(User.tg_id == tg_id))
+
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

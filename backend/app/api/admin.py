@@ -12,7 +12,6 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def require_admin_token(
     authorization: str = Header(..., alias="Authorization"),
 ) -> None:
-    """Require Authorization: Bearer <API_TOKEN> header for admin access."""
     settings = get_backend_settings()
     if not settings.api_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
