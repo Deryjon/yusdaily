@@ -11,6 +11,32 @@ from bot.locales import t
 router = Router()
 
 
+async def ensure_phone(
+    state: FSMContext,
+    message: types.Message,
+    language_code: str | None,
+) -> str | None:
+    data = await state.get_data()
+    phone = data.get("phone")
+    if phone:
+        return str(phone)
+    await state.set_state(RegistrationState.phone)
+    await message.answer(
+        t("ask_phone", language_code),
+        reply_markup=phone_request_kb(language_code),
+    )
+    return None
+
+
+async def ensure_phone_from_query(
+    state: FSMContext,
+    query: types.CallbackQuery,
+) -> str | None:
+    if not query.message:
+        return None
+    language_code = query.from_user.language_code
+    return await ensure_phone(state, query.message, language_code)
+
 
 
 def format_today_text(data: dict, language_code: str | None) -> str:
@@ -116,7 +142,10 @@ async def menu_text_router(message: types.Message, crm: CRMClient, state: FSMCon
     text = message.text.strip()
 
     if text == t("menu_today", lang):
-        data = await crm.get_today(message.from_user.id)
+        phone = await ensure_phone(state, message, lang)
+        if not phone:
+            return
+        data = await crm.get_today(phone)
         await message.answer(format_today_text(data, lang) or t("today_empty", lang))
         return
 
@@ -136,7 +165,10 @@ async def menu_text_router(message: types.Message, crm: CRMClient, state: FSMCon
         return
 
     if text == t("menu_profile", lang):
-        profile = await crm.get_profile(message.from_user.id)
+        phone = await ensure_phone(state, message, lang)
+        if not phone:
+            return
+        profile = await crm.get_profile(phone)
         if not profile:
             await message.answer(
                 t("profile_not_found", lang),
@@ -166,8 +198,11 @@ async def idea_text(message: types.Message, crm: CRMClient, state: FSMContext) -
         await message.answer(t("idea_prompt", lang))
         return
 
-    await crm.create_idea(message.from_user.id, message.text.strip(), "telegram")
-    await state.clear()
+    phone = await ensure_phone(state, message, lang)
+    if not phone:
+        return
+    await crm.create_idea(phone, message.text.strip(), "telegram")
+    await state.set_state(None)
     await message.answer(
         t("idea_saved", lang),
         reply_markup=main_menu_kb(lang),
@@ -175,12 +210,21 @@ async def idea_text(message: types.Message, crm: CRMClient, state: FSMContext) -
 
 
 @router.callback_query(StateFilter(None))
-async def progress_callback(query: types.CallbackQuery, crm: CRMClient) -> None:
+async def progress_callback(
+    query: types.CallbackQuery,
+    crm: CRMClient,
+    state: FSMContext,
+) -> None:
     if not query.data or not query.data.startswith("progress:"):
         return
 
+    phone = await ensure_phone_from_query(state, query)
+    if not phone:
+        await query.answer()
+        return
+
     period = query.data.split(":", 1)[1]
-    data = await crm.get_progress(query.from_user.id, period)
+    data = await crm.get_progress(phone, period)
     if query.message:
         await query.message.answer(format_progress_text(data, query.from_user.language_code))
     await query.answer()

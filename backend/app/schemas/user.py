@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 
 
 class UserCreate(BaseModel):
-    tg_id: int = Field(..., ge=1)
     username: str | None = Field(default=None, max_length=64)
     phone: str = Field(..., min_length=5, max_length=32)
     first_name: str = Field(..., min_length=1, max_length=64)
@@ -13,7 +12,6 @@ class UserCreate(BaseModel):
 
 class UserRead(BaseModel):
     id: int
-    tg_id: int
     username: str | None
     phone: str
     first_name: str

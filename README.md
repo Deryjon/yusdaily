@@ -60,7 +60,6 @@ docker-compose up --build
 ```
 POST /api/tg/profile
 {
-  "tg_id": 123456,
   "username": "user",
   "phone": "+79990000000",
   "first_name": "Иван",
@@ -73,22 +72,21 @@ POST /api/tg/profile
 План на сегодня (GET, только чтение):
 
 ```
-GET /today?tg_id=123456
+GET /today (X-PHONE: +79990000000)
 ```
 
 Прогресс (GET, только чтение):
 
 ```
-GET /progress?tg_id=123456&period=week
-GET /progress?tg_id=123456&period=month
+GET /progress?period=week (X-PHONE: +79990000000)
+GET /progress?period=month (X-PHONE: +79990000000)
 ```
 
 Задумки (POST, единственный POST в боте):
 
 ```
-POST /ideas
+POST /ideas (X-PHONE: +79990000000)
 {
-  "tg_id": 123456,
   "text": "сделать отдельный дизайн для задач",
   "source": "telegram"
 }
@@ -97,5 +95,5 @@ POST /ideas
 ## WebApp (заготовка)
 
 ```
-https://app.domain.com?tg_id=123456
+https://app.domain.com
 ```

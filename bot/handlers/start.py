@@ -26,15 +26,6 @@ async def start_cmd(
 ) -> None:
     user = message.from_user
     lang = user.language_code
-    profile = await crm.get_profile(user.id)
-    if profile:
-        await state.clear()
-        await message.answer(
-            t("profile_already_saved", lang),
-            reply_markup=main_menu_kb(lang),
-        )
-        return
-
     await state.set_state(RegistrationState.phone)
     await message.answer(
         t("ask_phone", lang),
@@ -43,7 +34,7 @@ async def start_cmd(
 
 
 @router.message(RegistrationState.phone)
-async def register_phone(message: types.Message, state: FSMContext) -> None:
+async def register_phone(message: types.Message, crm: CRMClient, state: FSMContext) -> None:
     lang = message.from_user.language_code
     if not message.contact or message.contact.user_id != message.from_user.id:
         await message.answer(
@@ -52,7 +43,18 @@ async def register_phone(message: types.Message, state: FSMContext) -> None:
         )
         return
 
-    await state.update_data(phone=message.contact.phone_number)
+    phone = message.contact.phone_number
+    profile = await crm.get_profile(phone)
+    if profile:
+        await state.update_data(phone=phone)
+        await state.set_state(None)
+        await message.answer(
+            t("profile_already_saved", lang),
+            reply_markup=main_menu_kb(lang),
+        )
+        return
+
+    await state.update_data(phone=phone)
     await state.set_state(RegistrationState.first_name)
     await message.answer(t("ask_first_name", lang), reply_markup=ReplyKeyboardRemove())
 
@@ -117,7 +119,6 @@ async def register_gender(message: types.Message, crm: CRMClient, state: FSMCont
     data = await state.get_data()
     user = message.from_user
     payload = {
-        "tg_id": user.id,
         "username": user.username,
         "phone": data["phone"],
         "first_name": data["first_name"],
@@ -126,7 +127,8 @@ async def register_gender(message: types.Message, crm: CRMClient, state: FSMCont
         "gender": gender,
     }
     await crm.create_profile(payload)
-    await state.clear()
+    await state.update_data(phone=data["phone"])
+    await state.set_state(None)
     await message.answer(
         t("profile_saved", lang),
         reply_markup=main_menu_kb(lang),

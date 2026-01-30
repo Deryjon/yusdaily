@@ -13,39 +13,18 @@ class CRMClient:
             return {"Authorization": f"Bearer {self._token}"}
         return {}
 
-    def _tg_headers(self, telegram_id: int) -> dict[str, str]:
+    def _phone_headers(self, phone: str) -> dict[str, str]:
         headers = self._headers()
-        headers["X-TG-ID"] = str(telegram_id)
+        headers["X-PHONE"] = phone
         return headers
 
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def auth_user(
-        self,
-        telegram_id: int,
-        username: str | None,
-        first_name: str | None,
-        last_name: str | None,
-    ) -> dict[str, Any]:
-        payload = {
-            "telegram_id": telegram_id,
-            "username": username,
-            "first_name": first_name,
-            "last_name": last_name,
-        }
-        r = await self._client.post(
-            f"{self._base_url}/api/tg/auth",
-            json=payload,
-            headers=self._headers(),
-        )
-        r.raise_for_status()
-        return r.json()
-
-    async def get_profile(self, telegram_id: int) -> dict[str, Any] | None:
+    async def get_profile(self, phone: str) -> dict[str, Any] | None:
         r = await self._client.get(
             f"{self._base_url}/api/tg/profile",
-            params={"tg_id": telegram_id},
+            params={"phone": phone},
             headers=self._headers(),
         )
         if r.status_code == 404:
@@ -54,9 +33,6 @@ class CRMClient:
         return r.json()
 
     async def create_profile(self, payload: dict[str, Any]) -> dict[str, Any]:
-        if "telegram_id" in payload:
-            payload = {**payload, "tg_id": payload["telegram_id"]}
-            payload.pop("telegram_id", None)
         r = await self._client.post(
             f"{self._base_url}/api/tg/profile",
             json=payload,
@@ -65,28 +41,28 @@ class CRMClient:
         r.raise_for_status()
         return r.json()
 
-    async def get_today(self, telegram_id: int) -> dict[str, Any]:
+    async def get_today(self, phone: str) -> dict[str, Any]:
         r = await self._client.get(
             f"{self._base_url}/api/today",
-            headers=self._tg_headers(telegram_id),
+            headers=self._phone_headers(phone),
         )
         r.raise_for_status()
         return r.json()
 
-    async def get_progress(self, telegram_id: int, period: str) -> dict[str, Any]:
+    async def get_progress(self, phone: str, period: str) -> dict[str, Any]:
         r = await self._client.get(
             f"{self._base_url}/api/progress",
             params={"period": period},
-            headers=self._tg_headers(telegram_id),
+            headers=self._phone_headers(phone),
         )
         r.raise_for_status()
         return r.json()
 
-    async def create_idea(self, telegram_id: int, text: str, source: str) -> dict[str, Any]:
+    async def create_idea(self, phone: str, text: str, source: str) -> dict[str, Any]:
         r = await self._client.post(
             f"{self._base_url}/api/ideas",
             json={"text": text, "source": source},
-            headers=self._tg_headers(telegram_id),
+            headers=self._phone_headers(phone),
         )
         r.raise_for_status()
         return r.json()

@@ -28,6 +28,6 @@ async def list_users(
     result = await session.execute(select(User).order_by(User.id.desc()))
     users = result.scalars().all()
     return {"items": [
-        {"id": u.id, "tg_id": u.tg_id, "created_at": getattr(u, "created_at", None)}
+        {"id": u.id, "created_at": getattr(u, "created_at", None)}
         for u in users
     ]}
