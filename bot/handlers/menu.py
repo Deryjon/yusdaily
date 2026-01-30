@@ -11,6 +11,42 @@ from bot.locales import t
 router = Router()
 
 
+async def ensure_token(
+    state: FSMContext,
+    crm: CRMClient,
+    message: types.Message,
+    language_code: str | None,
+) -> str | None:
+    data = await state.get_data()
+    token = data.get("token")
+    if token:
+        return str(token)
+
+    phone = data.get("phone")
+    if phone:
+        token = await crm.login(str(phone))
+        if token:
+            await state.update_data(token=token)
+            return token
+
+    await state.set_state(RegistrationState.phone)
+    await message.answer(
+        t("ask_phone", language_code),
+        reply_markup=phone_request_kb(language_code),
+    )
+    return None
+
+
+async def ensure_token_from_query(
+    state: FSMContext,
+    crm: CRMClient,
+    query: types.CallbackQuery,
+) -> str | None:
+    if not query.message:
+        return None
+    language_code = query.from_user.language_code
+    return await ensure_token(state, crm, query.message, language_code)
+
 
 
 def format_today_text(data: dict, language_code: str | None) -> str:
@@ -116,7 +152,10 @@ async def menu_text_router(message: types.Message, crm: CRMClient, state: FSMCon
     text = message.text.strip()
 
     if text == t("menu_today", lang):
-        data = await crm.get_today(message.from_user.id)
+        token = await ensure_token(state, crm, message, lang)
+        if not token:
+            return
+        data = await crm.get_today(token)
         await message.answer(format_today_text(data, lang) or t("today_empty", lang))
         return
 
@@ -136,7 +175,10 @@ async def menu_text_router(message: types.Message, crm: CRMClient, state: FSMCon
         return
 
     if text == t("menu_profile", lang):
-        profile = await crm.get_profile(message.from_user.id)
+        token = await ensure_token(state, crm, message, lang)
+        if not token:
+            return
+        profile = await crm.get_profile(token)
         if not profile:
             await message.answer(
                 t("profile_not_found", lang),
@@ -166,8 +208,11 @@ async def idea_text(message: types.Message, crm: CRMClient, state: FSMContext) -
         await message.answer(t("idea_prompt", lang))
         return
 
-    await crm.create_idea(message.from_user.id, message.text.strip(), "telegram")
-    await state.clear()
+    token = await ensure_token(state, crm, message, lang)
+    if not token:
+        return
+    await crm.create_idea(token, message.text.strip(), "telegram")
+    await state.set_state(None)
     await message.answer(
         t("idea_saved", lang),
         reply_markup=main_menu_kb(lang),
@@ -175,12 +220,21 @@ async def idea_text(message: types.Message, crm: CRMClient, state: FSMContext) -
 
 
 @router.callback_query(StateFilter(None))
-async def progress_callback(query: types.CallbackQuery, crm: CRMClient) -> None:
+async def progress_callback(
+    query: types.CallbackQuery,
+    crm: CRMClient,
+    state: FSMContext,
+) -> None:
     if not query.data or not query.data.startswith("progress:"):
         return
 
+    token = await ensure_token_from_query(state, crm, query)
+    if not token:
+        await query.answer()
+        return
+
     period = query.data.split(":", 1)[1]
-    data = await crm.get_progress(query.from_user.id, period)
+    data = await crm.get_progress(token, period)
     if query.message:
         await query.message.answer(format_progress_text(data, query.from_user.language_code))
     await query.answer()

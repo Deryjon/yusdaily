@@ -26,6 +26,7 @@ pip install -r backend/requirements.txt
 ## Конфигурация
 
 Скопируйте `.env.example` в `.env` и заполните значения.
+Для токенов требуется `JWT_SECRET`.
 
 ## Миграции
 
@@ -60,7 +61,6 @@ docker-compose up --build
 ```
 POST /api/tg/profile
 {
-  "tg_id": 123456,
   "username": "user",
   "phone": "+79990000000",
   "first_name": "Иван",
@@ -70,25 +70,49 @@ POST /api/tg/profile
 }
 ```
 
+Логин (телефон):
+
+```
+POST /api/auth/login
+{
+  "phone": "+79990000000"
+}
+```
+
+Логин из Telegram WebApp (initData):
+
+```
+POST /api/auth/telegram
+{
+  "phone": "+79990000000",
+  "initData": "query_id=..."
+}
+```
+
+Профиль (GET, только чтение):
+
+```
+GET /api/profile (Authorization: Bearer <token>)
+```
+
 План на сегодня (GET, только чтение):
 
 ```
-GET /today?tg_id=123456
+GET /today (Authorization: Bearer <token>)
 ```
 
 Прогресс (GET, только чтение):
 
 ```
-GET /progress?tg_id=123456&period=week
-GET /progress?tg_id=123456&period=month
+GET /progress?period=week (Authorization: Bearer <token>)
+GET /progress?period=month (Authorization: Bearer <token>)
 ```
 
 Задумки (POST, единственный POST в боте):
 
 ```
-POST /ideas
+POST /ideas (Authorization: Bearer <token>)
 {
-  "tg_id": 123456,
   "text": "сделать отдельный дизайн для задач",
   "source": "telegram"
 }
@@ -97,5 +121,5 @@ POST /ideas
 ## WebApp (заготовка)
 
 ```
-https://app.domain.com?tg_id=123456
+https://app.domain.com
 ```

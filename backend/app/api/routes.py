@@ -21,6 +21,7 @@ from app.schemas import (
     UserCreate,
     UserRead,
 )
+from app.services.auth import create_access_token
 from app.services.stats import ensure_stats_range, get_day_bounds, upsert_daily_stat
 from app.services.webapp_auth import verify_init_data
 
@@ -32,9 +33,23 @@ class WebAppAuthRequest(BaseModel):
     initData: str
 
 
+class AuthLoginRequest(BaseModel):
+    phone: str
+
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TelegramAuthRequest(BaseModel):
+    initData: str
+    phone: str
+
+
 @router.get("/api/tg/profile", response_model=UserRead)
-async def get_profile(tg_id: int, session: AsyncSession = Depends(get_session)) -> User:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
+async def get_profile(phone: str, session: AsyncSession = Depends(get_session)) -> User:
+    result = await session.execute(select(User).where(User.phone == phone))
     profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -46,12 +61,8 @@ async def create_or_update_profile(
     payload: UserCreate,
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    result = await session.execute(select(User).where(User.tg_id == payload.tg_id))
-    profile = result.scalar_one_or_none()
     result = await session.execute(select(User).where(User.phone == payload.phone))
-    phone_owner = result.scalar_one_or_none()
-    if phone_owner and (not profile or phone_owner.id != profile.id):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Phone is already in use")
+    profile = result.scalar_one_or_none()
     if profile:
         profile.username = payload.username
         profile.phone = payload.phone
@@ -64,7 +75,6 @@ async def create_or_update_profile(
         return profile
 
     profile = User(
-        tg_id=payload.tg_id,
         username=payload.username,
         phone=payload.phone,
         first_name=payload.first_name,
@@ -81,6 +91,35 @@ async def create_or_update_profile(
 @router.get("/api/profile", response_model=ProfileRead)
 async def get_profile_current(user: User = Depends(get_current_user)) -> User:
     return user
+
+
+@router.post("/api/auth/login", response_model=AuthTokenResponse)
+async def login(payload: AuthLoginRequest, session: AsyncSession = Depends(get_session)) -> dict[str, str]:
+    result = await session.execute(select(User).where(User.phone == payload.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    return {"access_token": create_access_token(user.phone), "token_type": "bearer"}
+
+
+@router.post("/api/auth/telegram", response_model=AuthTokenResponse)
+async def telegram_login(
+    payload: TelegramAuthRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    bot_token = os.getenv("BOT_TOKEN", "")
+    if not bot_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    ok, result = verify_init_data(payload.initData, bot_token)
+    if not ok or not result:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid init data")
+
+    result = await session.execute(select(User).where(User.phone == payload.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    return {"access_token": create_access_token(user.phone), "token_type": "bearer"}
 
 
 @router.get("/api/today", response_model=TodayResponse)
