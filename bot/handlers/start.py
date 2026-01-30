@@ -44,9 +44,9 @@ async def register_phone(message: types.Message, crm: CRMClient, state: FSMConte
         return
 
     phone = message.contact.phone_number
-    profile = await crm.get_profile(phone)
-    if profile:
-        await state.update_data(phone=phone)
+    token = await crm.login(phone)
+    if token:
+        await state.update_data(phone=phone, token=token)
         await state.set_state(None)
         await message.answer(
             t("profile_already_saved", lang),
@@ -127,7 +127,8 @@ async def register_gender(message: types.Message, crm: CRMClient, state: FSMCont
         "gender": gender,
     }
     await crm.create_profile(payload)
-    await state.update_data(phone=data["phone"])
+    token = await crm.login(data["phone"])
+    await state.update_data(phone=data["phone"], token=token)
     await state.set_state(None)
     await message.answer(
         t("profile_saved", lang),

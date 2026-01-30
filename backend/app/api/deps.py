@@ -4,14 +4,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.models import User
+from app.services.auth import decode_access_token
 async def get_current_user(
-    x_phone: str | None = Header(default=None, alias="X-PHONE"),
+    authorization: str | None = Header(default=None, alias="Authorization"),
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    if not x_phone:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing phone")
+    if not authorization:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    token = authorization.removeprefix("Bearer ").strip()
+    phone = decode_access_token(token)
+    if not phone:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    result = await session.execute(select(User).where(User.phone == x_phone))
+    result = await session.execute(select(User).where(User.phone == phone))
 
     user = result.scalar_one_or_none()
     if not user:
