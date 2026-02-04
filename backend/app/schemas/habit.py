@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,7 +15,7 @@ class HabitTypeEnum(str, Enum):
 class HabitRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: UUID
     key: str
     title: str
     type: HabitTypeEnum
