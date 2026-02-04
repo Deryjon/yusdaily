@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: UUID
     email: EmailStr
     timezone: str
 

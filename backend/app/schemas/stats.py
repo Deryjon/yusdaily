@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -11,7 +12,7 @@ class StatsRange(BaseModel):
 
 
 class SummaryHabitItem(BaseModel):
-    habit_id: str
+    habit_id: UUID
     key: str
     minutes: int
     done_days: int
@@ -36,7 +37,7 @@ class CalendarResponse(BaseModel):
 
 
 class StreakHabitItem(BaseModel):
-    habit_id: str
+    habit_id: UUID
     key: str
     streak: int
 

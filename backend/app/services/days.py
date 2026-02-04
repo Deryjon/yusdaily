@@ -68,7 +68,7 @@ async def upsert_day(
     log_date: date,
     payload: DayUpsertRequest,
 ) -> dict[str, object]:
-    async with session.begin():
+    try:
         daily_log = await _get_daily_log(session, user, log_date)
         if not daily_log:
             daily_log = DailyLog(user_id=user.id, date=log_date, note=payload.note or "")
@@ -102,6 +102,10 @@ async def upsert_day(
                 row.done = item.done
                 row.minutes = item.minutes
                 row.comment = item.comment or ""
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 
     return await get_day(session, user, log_date)
 
@@ -113,7 +117,7 @@ async def patch_day_habit(
     habit_id: UUID,
     payload: DayHabitPatchRequest,
 ) -> dict[str, object]:
-    async with session.begin():
+    try:
         habit_result = await session.execute(
             select(Habit).where(Habit.id == habit_id, Habit.user_id == user.id)
         )
@@ -149,6 +153,10 @@ async def patch_day_habit(
             row.minutes = max(0, (row.minutes or 0) + payload.minutes_delta)
         if payload.comment is not None:
             row.comment = payload.comment
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 
     return {
         "habit_id": row.habit_id,

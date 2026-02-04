@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DayHabitRead(BaseModel):
-    habit_id: str
+    habit_id: UUID
     key: str
     title: str
     done: bool
