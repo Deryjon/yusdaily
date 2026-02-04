@@ -1,40 +1,34 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import StrEnum
+from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 
-class Gender(StrEnum):
-    male = "male"
-    female = "female"
-
-
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str | None] = mapped_column(String(64))
-    phone: Mapped[str] = mapped_column(String(32), nullable=False, unique=True, index=True)
-    first_name: Mapped[str] = mapped_column(String(64), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(64), nullable=False)
-    birth_year: Mapped[int] = mapped_column(Integer, nullable=False)
-    gender: Mapped[str] = mapped_column(String(16), nullable=False)
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="Asia/Tashkent")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
 
-    tasks: Mapped[list["Task"]] = relationship(back_populates="user")
-    ideas: Mapped[list["Idea"]] = relationship(back_populates="user")
-    daily_stats: Mapped[list["DailyStat"]] = relationship(back_populates="user")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
+    habits: Mapped[list["Habit"]] = relationship(back_populates="user")
+    daily_logs: Mapped[list["DailyLog"]] = relationship(back_populates="user")
 
 
-from app.models.task import Task  # noqa: E402
-from app.models.idea import Idea  # noqa: E402
-from app.models.daily_stat import DailyStat  # noqa: E402
+from app.models.daily_log import DailyLog  # noqa: E402
+from app.models.habit import Habit  # noqa: E402
+from app.models.refresh_token import RefreshToken  # noqa: E402

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_backend_settings
+from app.core.config import get_settings
 from app.db.session import get_session
 from app.models.user import User
 
@@ -12,10 +12,11 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def require_admin_token(
     authorization: str = Header(..., alias="Authorization"),
 ) -> None:
-    settings = get_backend_settings()
-    if not settings.api_token:
+    settings = get_settings()
+    api_token = getattr(settings, "api_token", None)
+    if not api_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-    expected = f"Bearer {settings.api_token}"
+    expected = f"Bearer {api_token}"
     if authorization != expected:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 

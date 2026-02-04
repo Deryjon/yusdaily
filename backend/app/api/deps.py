@@ -1,10 +1,13 @@
+import jwt
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import get_token_subject
 from app.db.session import get_session
 from app.models import User
-from app.services.auth import decode_access_token
+
+
 async def get_current_user(
     authorization: str | None = Header(default=None, alias="Authorization"),
     session: AsyncSession = Depends(get_session),
@@ -14,11 +17,12 @@ async def get_current_user(
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     token = authorization.removeprefix("Bearer ").strip()
-    phone = decode_access_token(token)
-    if not phone:
+    try:
+        user_id = get_token_subject(token, "access")
+    except (ValueError, jwt.PyJWTError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    result = await session.execute(select(User).where(User.phone == phone))
+    result = await session.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
 
     user = result.scalar_one_or_none()
     if not user:

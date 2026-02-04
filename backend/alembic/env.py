@@ -4,7 +4,8 @@ import os
 from sqlalchemy import create_engine, pool
 from alembic import context
 
-from backend.app.db.base import Base
+from app.db.base import Base
+from app import models  # noqa: F401
 
 
 db_url = os.getenv("DATABASE_URL_SYNC") or os.getenv("DATABASE_URL")
