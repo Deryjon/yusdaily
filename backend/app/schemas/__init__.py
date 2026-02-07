@@ -16,6 +16,14 @@ from app.schemas.day import (
     DayUpsertRequest,
 )
 from app.schemas.habit import HabitCreate, HabitPatch, HabitRead, HabitTypeEnum
+from app.schemas.purchase import (
+    PurchaseCreate,
+    PurchasePatch,
+    PurchaseRead,
+    PurchaseSummaryCategory,
+    PurchaseSummaryDay,
+    PurchaseSummaryResponse,
+)
 from app.schemas.stats import CalendarResponse, StatsSummaryResponse, StreaksResponse
 
 __all__ = [
@@ -34,6 +42,12 @@ __all__ = [
     "HabitTypeEnum",
     "LoginRequest",
     "LogoutRequest",
+    "PurchaseCreate",
+    "PurchasePatch",
+    "PurchaseRead",
+    "PurchaseSummaryCategory",
+    "PurchaseSummaryDay",
+    "PurchaseSummaryResponse",
     "RefreshRequest",
     "RegisterRequest",
     "StatsSummaryResponse",
