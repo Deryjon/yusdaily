@@ -27,8 +27,10 @@ class User(Base):
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
     habits: Mapped[list["Habit"]] = relationship(back_populates="user")
     daily_logs: Mapped[list["DailyLog"]] = relationship(back_populates="user")
+    purchases: Mapped[list["Purchase"]] = relationship(back_populates="user")
 
 
 from app.models.daily_log import DailyLog  # noqa: E402
 from app.models.habit import Habit  # noqa: E402
+from app.models.purchase import Purchase  # noqa: E402
 from app.models.refresh_token import RefreshToken  # noqa: E402
